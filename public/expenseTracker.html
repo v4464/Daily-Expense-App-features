@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+</head>
+<body>
+    <h1>Expense Tracker</h1>
+    <h2 id="userName"></h2> 
+
+    
+    <button id="buyPremiumButton">Buy Premium Membership</button>
+
+    
+    <button id="leaderboardButton" style="display: none;">You Are Now A Premium Member - View Leaderboard</button>
+
+    <h2>Add Expense</h2>
+    <form id="expenseForm">
+        <label for="expenseAmount">Amount:</label><br>
+        <input type="text" id="expenseAmount" name="expenseAmount"><br>
+        <label for="expenseDescription">Description:</label><br>
+        <input type="text" id="expenseDescription" name="expenseDescription"><br>
+        <label for="expenseCategory">Category:</label><br>
+        <select id="expenseCategory" name="expenseCategory">
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Grocery">Grocery</option>
+        </select><br>
+        <button type="submit">Add Expense</button>
+    </form>
+
+    <h2>Expense List</h2>
+    <ul id="expenseList">
+    </ul>
+
+    <h2>Leaderboard</h2>
+    <ul id="leaderboardContainer"></ul>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        async function fetchUserName() {
+            try {
+                const response = await axios.get('/getUserName');
+                const userName = response.data.name;
+                document.getElementById('userName').textContent = `Welcome, ${userName}!`; // Display the user's name
+            } catch (error) {
+                console.error('Failed to fetch user name:', error);
+            }
+        }
+
+        async function fetchLeaderboard() {
+            try {
+                const response = await axios.get('/leaderboard');
+                const leaderboard = response.data;
+                const leaderboardContainer = document.getElementById('leaderboardContainer');
+                leaderboardContainer.innerHTML = ''; // Clear previous leaderboard content
+                leaderboard.forEach((entry, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${index + 1}. User ID: ${entry.user_id}, Total Expense: ₹${entry.totalExpense}`;
+                    leaderboardContainer.appendChild(listItem);
+                });
+                leaderboardContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Failed to fetch leaderboard:', error);
+            }
+        }
+
+        window.onload = fetchUserName;
+
+        document.getElementById('buyPremiumButton').addEventListener('click', async () => {
+            try {
+                const response = await axios.post('/createOrder');
+                const orderId = response.data.id;
+                const options = {
+                    key: 'rzp_test_T7qu1l1wzFOO0J',
+                    amount: response.data.amount,
+                    currency: 'INR',
+                    name: 'Premium Membership',
+                    description: 'Upgrade to premium',
+                    order_id: orderId,
+                    handler: async function (response) {
+                        try {
+                            const updatedResponse = await axios.post('/updateOrderStatus', { orderId });
+                            alert('Transaction successful, Congrats! You are our Premium Member');
+                            document.getElementById('leaderboardButton').style.display = 'block';
+                        } catch (error) {
+                            console.error('Failed to update order status:', error);
+                            alert('TRANSACTION FAILED, Please Try Again');
+                        }
+                    },
+                    prefill: {
+                        name: 'Your Name',
+                        email: 'your_email@example.com',
+                        contact: '1234567890'
+                    },
+                    notes: {
+                        address: 'Razorpay Corporate Office'
+                    },
+                    theme: {
+                        color: '#F37254'
+                    }
+                };
+                const rzp1 = new Razorpay(options);
+                rzp1.open();
+            } catch (error) {
+                console.error('Failed to create order:', error);
+                alert('Failed to create order');
+            }
+        });
+
+        document.getElementById('leaderboardButton').addEventListener('click', fetchLeaderboard);
+
+        async function deleteExpense(expenseId) {
+            try {
+                const response = await axios.delete(`/deleteExpense/${expenseId}`);
+                alert(response.data);
+                loadExpenseList();
+            } catch (error) {
+                alert(error.response.data);
+            }
+        }
+
+        async function loadExpenseList() {
+            try {
+                const response = await axios.get('/getExpenses');
+                const expenses = response.data;
+                const expenseList = document.getElementById('expenseList');
+                expenseList.innerHTML = '';
+                expenses.forEach(expense => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${expense.description}: ₹${expense.amount} (${expense.category}) `;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = () => deleteExpense(expense.id);
+                    listItem.appendChild(deleteButton);
+                    expenseList.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error('Failed to load expense list', error);
+            }
+        }
+
+        loadExpenseList();
+
+        const expenseForm = document.getElementById('expenseForm');
+        expenseForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const amount = document.getElementById('expenseAmount').value;
+            const description = document.getElementById('expenseDescription').value;
+            const category = document.getElementById('expenseCategory').value;
+
+            try {
+                const response = await axios.post('/addExpense', { amount, description, category });
+                alert(response.data);
+                loadExpenseList();
+            } catch (error) {
+                alert(error.response.data);
+            }
+        });
+    </script>
+</body>
+</html>

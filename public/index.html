@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Our Site</title>
+</head>
+<body>
+    <h1>Welcome to Our Site</h1>
+
+    <!-- Signup Section -->
+    <div id="signupSection">
+        <h2>Sign Up</h2>
+        <form id="signupForm">
+            <label for="signupName">Name:</label><br>
+            <input type="text" id="signupName" name="signupName"><br>
+            <label for="signupEmail">Email:</label><br>
+            <input type="email" id="signupEmail" name="signupEmail"><br>
+            <label for="signupPassword">Password:</label><br>
+            <input type="password" id="signupPassword" name="signupPassword"><br>
+            <button type="button" onclick="submitSignupForm()">Sign Up</button>
+        </form>
+    </div>
+
+    <!-- Login Section -->
+    <div id="loginSection" style="display:none;">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <label for="loginEmail">Email:</label><br>
+            <input type="email" id="loginEmail" name="loginEmail"><br>
+            <label for="loginPassword">Password:</label><br>
+            <input type="password" id="loginPassword" name="loginPassword"><br>
+            <button type="button" onclick="submitLoginForm()">Login</button>
+        </form>
+    </div>
+
+    <!-- Buttons to toggle between Signup and Login sections -->
+    <button onclick="toggleSignup()">New User? Sign Up</button>
+    <button onclick="toggleLogin()">Existing User? Login</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        function toggleSignup() {
+            document.getElementById('signupSection').style.display = 'block';
+            document.getElementById('loginSection').style.display = 'none';
+        }
+
+        function toggleLogin() {
+            document.getElementById('signupSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'block';
+        }
+
+        async function submitSignupForm() {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            try {
+                const response = await axios.post('/signup', { name, email, password });
+                alert(response.data);
+            } catch (error) {
+                alert(error.response.data);
+            }
+        }
+
+        async function submitLoginForm() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await axios.post('/login', { email, password });
+                alert(response.data);
+                window.location.href = '/expenseTracker.html';
+            } catch (error) {
+                alert(error.response.data);
+            }
+        }
+    </script>
+</body>
+</html>
